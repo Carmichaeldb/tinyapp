@@ -28,10 +28,18 @@ app.get("/hello", (req, res) => {
   res.render('hello_world', templateVars);
 });
 
+/**
+ * Renders users My URLs page
+ */
+
 app.get("/urls", (req, res) => {
   const templateVars = {urls: urlDatabase};
   res.render('urls_index', templateVars);
 });
+
+/**
+ * Renders Create New URL page
+ */
 
 app.get("/urls/new", (req, res) => {
   res.render("urls_new");
@@ -50,16 +58,23 @@ app.post("/urls", (req, res) => {
   res.redirect("/urls/" + tinyUrl);
 });
 
-
+/**
+ * Renders TinyURL Information
+ * if TinyURL does not exist in database gives 400 error
+ */
 app.get("/urls/:id", (req, res) => {
   const templateVars = { id: req.params.id, longURL: urlDatabase[req.params.id] };
   if (!urlDatabase[req.params.id]) {
-    res.status(404).send("Error 400: Tiny Url does not exist");
+    res.status(404).send("Error 400: TinyUrl does not exist");
     return;
   }
   res.render("urls_show", templateVars);
 });
 
+/**
+ * Directs user to longURL
+ * If LongURL does not exist in database gives 404 error
+ */
 app.get("/u/:id", (req, res) => {
   const longURL = urlDatabase[req.params.id];
   if (!longURL) {
@@ -69,6 +84,17 @@ app.get("/u/:id", (req, res) => {
   res.redirect(longURL);
 });
 
+/**
+ * Delete ShortUrl Entry from DB
+ */
+app.post("/urls/:id/delete", (req, res) => {
+  delete urlDatabase[req.params.id];
+  res.redirect("/urls");
+});
+
+/**
+ * Generates random 6 character string
+ */
 const generateRandomString = function () {
   const characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
   let result = '';

@@ -37,15 +37,36 @@ app.get("/urls/new", (req, res) => {
   res.render("urls_new");
 });
 
+/**
+ * Recieve new URL from form
+ * Generate random string
+ * Insert longURL with new random string as key
+*/
 app.post("/urls", (req, res) => {
-  console.log(req.body); // Log the POST request body to the console
-  res.send("Ok"); // Respond with 'Ok' (we will replace this)
+  const tinyUrl = generateRandomString();
+  const { longURL } =  req.body; //
+  urlDatabase[tinyUrl] = longURL;
+  
+  res.redirect("/urls/" + tinyUrl);
 });
 
 
 app.get("/urls/:id", (req, res) => {
   const templateVars = { id: req.params.id, longURL: urlDatabase[req.params.id] };
+  if (!urlDatabase[req.params.id]) {
+    res.status(404).send("Error 400: Tiny Url does not exist");
+    return;
+  }
   res.render("urls_show", templateVars);
+});
+
+app.get("/u/:id", (req, res) => {
+  const longURL = urlDatabase[req.params.id];
+  if (!longURL) {
+    res.status(404).send("Error 404: URL not found");
+    return;
+  }
+  res.redirect(longURL);
 });
 
 const generateRandomString = function () {

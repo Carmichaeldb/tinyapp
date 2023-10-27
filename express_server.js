@@ -84,6 +84,13 @@ app.get("/u/:id", (req, res) => {
   res.redirect(longURL);
 });
 
+app.post("/urls/:id", (req, res) => {
+  const id = req.params.id;
+  const { longURL } = req.body;
+  urlDatabase[id] = longURL;
+  res.redirect("/urls/");
+});
+
 /**
  * Delete ShortUrl Entry from DB
  */

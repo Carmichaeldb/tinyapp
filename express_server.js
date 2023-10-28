@@ -112,8 +112,17 @@ app.post("/urls/:id/delete", (req, res) => {
  * Recieves login requests
  */
 app.post("/login", (req, res) => {
-  res.cookie("username", req.body);
-  res.redirect("/urls/");
+  const { username } = req.body;
+  res.cookie("username", username);
+  res.redirect("/urls");
+});
+
+/**
+ * Recieves logout requests
+ */
+app.post("/logout", (req, res) => {
+  res.clearCookie("username");
+  res.redirect("/urls");
 });
 
 /**

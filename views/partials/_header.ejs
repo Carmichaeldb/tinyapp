@@ -19,20 +19,22 @@
       </div>
     </div>
       <% if (username) {%>
-        <div class="form-group mb-2 form-inline">
-        <b><p>Welcome, <%= username.username %></p></b>
-        <button type="submit" class="btn btn-primary">Logout</button>
-        </div>
+        <form class="form-inline" action="/logout" method="POST">
+          <div class="form-group mb-2">
+            <b><p>Welcome, <%= username %></p></b>
+            <button type="submit" class="btn btn-primary">Logout</button>
+          </div>
+        </form>
       <% } else {%>
 
-      <form class="form-inline justify-content-right" action="/login" method="POST">
+      <form class="form-inline" action="/login" method="POST">
         <div class="form-group mb-2">
           <input
             class="form-control center-block"
             type="text"
             name="username"
             placeholder="Username"
-            style="width: 300px; margin: 1em"
+            style="width: 150px; margin: 1em"
             />
             <button type="submit" class="btn btn-primary">Login</button>
           </div>

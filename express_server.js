@@ -84,6 +84,9 @@ app.get("/u/:id", (req, res) => {
   res.redirect(longURL);
 });
 
+/**
+ * Updates longURL from edit form
+ */
 app.post("/urls/:id", (req, res) => {
   const id = req.params.id;
   const { longURL } = req.body;
@@ -97,6 +100,14 @@ app.post("/urls/:id", (req, res) => {
 app.post("/urls/:id/delete", (req, res) => {
   delete urlDatabase[req.params.id];
   res.redirect("/urls");
+});
+
+/**
+ * Recieves login requests
+ */
+app.post("/login", (req, res) => {
+  res.cookie("username", req.body);
+  res.redirect("/urls/");
 });
 
 /**

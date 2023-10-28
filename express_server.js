@@ -47,7 +47,8 @@ app.get("/urls", (req, res) => {
  */
 
 app.get("/urls/new", (req, res) => {
-  res.render("urls_new");
+  const username = { username: req.cookies["username"]};
+  res.render("urls_new", username);
 });
 
 /**
@@ -68,7 +69,7 @@ app.post("/urls", (req, res) => {
  * if TinyURL does not exist in database gives 400 error
  */
 app.get("/urls/:id", (req, res) => {
-  const templateVars = { id: req.params.id, longURL: urlDatabase[req.params.id] };
+  const templateVars = { id: req.params.id, longURL: urlDatabase[req.params.id], username: req.cookies["username"], };
   if (!urlDatabase[req.params.id]) {
     res.status(404).send("Error 400: TinyUrl does not exist");
     return;

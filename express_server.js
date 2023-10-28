@@ -1,4 +1,5 @@
 const express = require("express");
+const cookieParser = require('cookie-parser');
 const app = express();
 const PORT = 8080; // default port 8080
 
@@ -10,6 +11,7 @@ const urlDatabase = {
 };
 
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
@@ -33,7 +35,10 @@ app.get("/hello", (req, res) => {
  */
 
 app.get("/urls", (req, res) => {
-  const templateVars = {urls: urlDatabase};
+  const templateVars = {
+    username: req.cookies["username"],
+    urls: urlDatabase};
+  
   res.render('urls_index', templateVars);
 });
 

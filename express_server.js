@@ -10,6 +10,8 @@ const urlDatabase = {
   "9sm5xK": "http://www.google.com"
 };
 
+const users = { };
+
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
@@ -21,18 +23,34 @@ app.get("/", (req, res) => {
   res.send("Hello!");
 });
 
+/**
+ * Renders Reigstration Page
+ */
+
 app.get("/register", (req, res) => {
-  const username = { username: req.cookies["username"]};
-  res.render("register", username);
+  const userId = req.cookies["userId"];
+  const templateVars = { username: users[userId] };
+  res.render("register", templateVars);
 });
+
+/**
+ * Recieve registration form data and store in Users Object
+ */
+
+app.post("/register", (req, res) => {
+  const newUserId = generateRandomString();
+  const newUser = {id: newUserId, email: req.body.email, password: req.body.password };
+  users[newUserId] = newUser;
+  res.cookie("userId", newUserId);
+  res.redirect("/urls");
+});
+
+/**
+ * provides urls JSON database
+ */
 
 app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
-});
-
-app.get("/hello", (req, res) => {
-  const templateVars = {greeting: "Hello World!"};
-  res.render('hello_world', templateVars);
 });
 
 /**
@@ -40,10 +58,10 @@ app.get("/hello", (req, res) => {
  */
 
 app.get("/urls", (req, res) => {
+  const userId = req.cookies["userId"];
   const templateVars = {
-    username: req.cookies["username"],
-    urls: urlDatabase};
-  
+    username: users[userId],
+    urls: urlDatabase };
   res.render('urls_index', templateVars);
 });
 
@@ -52,12 +70,13 @@ app.get("/urls", (req, res) => {
  */
 
 app.get("/urls/new", (req, res) => {
-  const username = { username: req.cookies["username"]};
-  res.render("urls_new", username);
+  const userId = req.cookies["userId"];
+  const templateVars = {username: users[userId]};
+  res.render("urls_new", templateVars);
 });
 
 /**
- * Recieve new URL from form
+ * Recieve new URL from new url form
  * Generate random string
  * Insert longURL with new random string as key
 */
@@ -74,7 +93,10 @@ app.post("/urls", (req, res) => {
  * if TinyURL does not exist in database gives 400 error
  */
 app.get("/urls/:id", (req, res) => {
-  const templateVars = { id: req.params.id, longURL: urlDatabase[req.params.id], username: req.cookies["username"], };
+  const userId = req.cookies["userId"];
+  const templateVars = { id: req.params.id,
+    longURL: urlDatabase[req.params.id],
+    username: users[userId]};
   if (!urlDatabase[req.params.id]) {
     res.status(404).send("Error 400: TinyUrl does not exist");
     return;
@@ -117,8 +139,8 @@ app.post("/urls/:id/delete", (req, res) => {
  * Recieves login requests
  */
 app.post("/login", (req, res) => {
-  const { username } = req.body;
-  res.cookie("username", username);
+  const { userId } = req.body;
+  res.cookie("userId", userId);
   res.redirect("/urls");
 });
 
@@ -126,7 +148,7 @@ app.post("/login", (req, res) => {
  * Recieves logout requests
  */
 app.post("/logout", (req, res) => {
-  res.clearCookie("username");
+  res.clearCookie("userId");
   res.redirect("/urls");
 });
 
@@ -142,3 +164,8 @@ const generateRandomString = function () {
   }
   return result;
 };
+
+app.get("/hello", (req, res) => {
+  const templateVars = {greeting: "Hello World!"};
+  res.render('hello_world', templateVars);
+});

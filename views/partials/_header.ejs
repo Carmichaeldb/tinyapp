@@ -21,7 +21,7 @@
       <% if (username) {%>
         <form class="form-inline" action="/logout" method="POST">
           <div class="form-group mb-2">
-            <b><p>Welcome, <%= username %></p></b>
+            <b><p>Welcome, <%= username.email %></p></b>
             <button type="submit" class="btn btn-primary">Logout</button>
           </div>
         </form>

@@ -10,7 +10,11 @@ const urlDatabase = {
   "9sm5xK": "http://www.google.com"
 };
 
-const users = { };
+const users = { "test": {
+  id: "test",
+  email: "test@testemail.com",
+  password: "1234"
+}};
 
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
@@ -41,6 +45,14 @@ app.post("/register", (req, res) => {
   const newUserId = generateRandomString();
   const newUser = {id: newUserId, email: req.body.email, password: req.body.password };
   users[newUserId] = newUser;
+  const emailSearch = getUsersByEmail(newUser.email);
+  if (newUser.email === "" || newUser.password === "") {
+    res.status(400).send("Error 400: No Email or Password provided");
+    return;
+  } if (emailSearch !== null) {
+    res.status(400).send("Error 400: Email already in use");
+    return;
+  }
   res.cookie("userId", newUserId);
   res.redirect("/urls");
 });
@@ -98,7 +110,7 @@ app.get("/urls/:id", (req, res) => {
     longURL: urlDatabase[req.params.id],
     username: users[userId]};
   if (!urlDatabase[req.params.id]) {
-    res.status(404).send("Error 400: TinyUrl does not exist");
+    res.status(400).send("Error 400: TinyUrl does not exist");
     return;
   }
   res.render("urls_show", templateVars);
@@ -152,9 +164,13 @@ app.post("/logout", (req, res) => {
   res.redirect("/urls");
 });
 
+//////////////////////////////////////
+//HELPER FUNCTIONS
+/////////////////////////////////////
 /**
  * Generates random 6 character string
  */
+
 const generateRandomString = function () {
   const characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
   let result = '';
@@ -163,6 +179,20 @@ const generateRandomString = function () {
     result += characters[random];
   }
   return result;
+};
+
+/**
+ * Search for user by email
+ */
+
+const getUsersByEmail = function (email) {
+  for (let user in users) {
+    if (users[user].email === email) {
+      return user;
+    }
+  }
+  console.log("No user found");
+  return null;
 };
 
 app.get("/hello", (req, res) => {

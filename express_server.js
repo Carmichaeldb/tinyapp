@@ -21,6 +21,11 @@ app.get("/", (req, res) => {
   res.send("Hello!");
 });
 
+app.get("/register", (req, res) => {
+  const username = { username: req.cookies["username"]};
+  res.render("register", username);
+});
+
 app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
 });

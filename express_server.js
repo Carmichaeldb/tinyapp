@@ -44,7 +44,6 @@ app.get("/register", (req, res) => {
 app.post("/register", (req, res) => {
   const newUserId = generateRandomString();
   const newUser = {id: newUserId, email: req.body.email, password: req.body.password };
-  users[newUserId] = newUser;
   const emailSearch = getUsersByEmail(newUser.email);
   if (newUser.email === "" || newUser.password === "") {
     res.status(400).send("Error 400: No Email or Password provided");
@@ -53,7 +52,28 @@ app.post("/register", (req, res) => {
     res.status(400).send("Error 400: Email already in use");
     return;
   }
+  users[newUserId] = newUser;
   res.cookie("userId", newUserId);
+  res.redirect("/urls");
+});
+
+/**
+ * Renders Login Page
+ */
+
+app.get("/login", (req, res) => {
+  const userId = req.cookies["userId"];
+  const templateVars = { username: users[userId] };
+  res.render("login", templateVars);
+});
+
+/**
+ * Recieves login requests
+ */
+
+app.post("/login", (req, res) => {
+  const { userId } = req.body;
+  res.cookie("userId", userId);
   res.redirect("/urls");
 });
 
@@ -147,14 +167,6 @@ app.post("/urls/:id/delete", (req, res) => {
   res.redirect("/urls");
 });
 
-/**
- * Recieves login requests
- */
-app.post("/login", (req, res) => {
-  const { userId } = req.body;
-  res.cookie("userId", userId);
-  res.redirect("/urls");
-});
 
 /**
  * Recieves logout requests

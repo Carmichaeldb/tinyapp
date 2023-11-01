@@ -72,8 +72,17 @@ app.get("/login", (req, res) => {
  */
 
 app.post("/login", (req, res) => {
-  const { userId } = req.body;
-  res.cookie("userId", userId);
+  const userLogin = { email: req.body.email, password: req.body.password };
+  const emailSearch = getUsersByEmail(userLogin.email);
+  if (emailSearch === null) {
+    res.status(400).send("Error 400: Email does not exist");
+    return;
+  }
+  if (userLogin.password !== users[emailSearch].password) {
+    res.status(400).send("Error 400: invalid password");
+    return;
+  }
+  res.cookie("userId", users[emailSearch].id);
   res.redirect("/urls");
 });
 
@@ -173,7 +182,7 @@ app.post("/urls/:id/delete", (req, res) => {
  */
 app.post("/logout", (req, res) => {
   res.clearCookie("userId");
-  res.redirect("/urls");
+  res.redirect("/login");
 });
 
 //////////////////////////////////////
@@ -203,7 +212,6 @@ const getUsersByEmail = function (email) {
       return user;
     }
   }
-  console.log("No user found");
   return null;
 };
 

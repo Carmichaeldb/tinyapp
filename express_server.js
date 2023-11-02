@@ -5,9 +5,19 @@ const PORT = 8080; // default port 8080
 
 app.set("view engine", "ejs");
 
+/**
+ * Global Vars
+ */
+
 const urlDatabase = {
-  "b2xVn2": "http://www.lighthouselabs.ca",
-  "9sm5xK": "http://www.google.com"
+  "b2xVn2": {
+    longURL: "http://www.lighthouselabs.ca",
+    userID: "test"
+  },
+  "9sm5xK": {
+    longURL: "http://www.google.com",
+    userID: "test"
+  }
 };
 
 const users = { "test": {
@@ -16,15 +26,28 @@ const users = { "test": {
   password: "1234"
 }};
 
+/**
+ * middleware
+ */
+
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+
+/**
+ * start server
+ */
 
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
 });
 
 app.get("/", (req, res) => {
-  res.send("Hello!");
+  const userId = req.cookies["userId"];
+  if (checkLogin(userId)) {
+    res.redirect("/urls");
+    return;
+  }
+  res.redirect("/login");
 });
 
 /**
@@ -34,6 +57,10 @@ app.get("/", (req, res) => {
 app.get("/register", (req, res) => {
   const userId = req.cookies["userId"];
   const templateVars = { username: users[userId] };
+  if (checkLogin(userId)) {
+    res.redirect("/urls");
+    return;
+  }
   res.render("register", templateVars);
 });
 
@@ -64,6 +91,10 @@ app.post("/register", (req, res) => {
 app.get("/login", (req, res) => {
   const userId = req.cookies["userId"];
   const templateVars = { username: users[userId] };
+  if (checkLogin(userId)) {
+    res.redirect("/urls");
+    return;
+  }
   res.render("login", templateVars);
 });
 
@@ -102,7 +133,12 @@ app.get("/urls", (req, res) => {
   const userId = req.cookies["userId"];
   const templateVars = {
     username: users[userId],
-    urls: urlDatabase };
+    urls: urlsForUsers(userId) };
+  if (!checkLogin(userId)) {
+    res.status(401).send("Error 401: Unauthorized Access. Please Login");
+    return;
+  }
+  console.log(templateVars.urls);
   res.render('urls_index', templateVars);
 });
 
@@ -113,6 +149,10 @@ app.get("/urls", (req, res) => {
 app.get("/urls/new", (req, res) => {
   const userId = req.cookies["userId"];
   const templateVars = {username: users[userId]};
+  if (!checkLogin(userId)) {
+    res.status(401).send("Error 401: Unauthorized Access. Please Login");
+    return;
+  }
   res.render("urls_new", templateVars);
 });
 
@@ -122,9 +162,14 @@ app.get("/urls/new", (req, res) => {
  * Insert longURL with new random string as key
 */
 app.post("/urls", (req, res) => {
+  const userId = req.cookies["userId"];
+  if (!checkLogin(userId)) {
+    res.status(401).send("Error 401: Unauthorized Access. Please Login");
+    return;
+  }
   const tinyUrl = generateRandomString();
-  const { longURL } =  req.body; //
-  urlDatabase[tinyUrl] = longURL;
+  const { longURL } =  req.body;
+  urlDatabase[tinyUrl] = { longURL: longURL, userID: userId };
   
   res.redirect("/urls/" + tinyUrl);
 });
@@ -136,11 +181,18 @@ app.post("/urls", (req, res) => {
 app.get("/urls/:id", (req, res) => {
   const userId = req.cookies["userId"];
   const templateVars = { id: req.params.id,
-    longURL: urlDatabase[req.params.id],
+    longURL: urlDatabase[req.params.id].longURL,
     username: users[userId]};
   if (!urlDatabase[req.params.id]) {
-    res.status(400).send("Error 400: TinyUrl does not exist");
+    res.status(400).send("Error 400: TinyUrl does not exist.");
     return;
+  }
+  if (!checkLogin(userId)) {
+    res.status(401).send("Error 401: Unauthorized Access. Please Login.");
+    return;
+  }
+  if (urlDatabase[req.params.id].userID !== userId) {
+    res.status(401).send("Error 401: Unauthorized Access. TinyURL does not belong to this user.");
   }
   res.render("urls_show", templateVars);
 });
@@ -150,7 +202,7 @@ app.get("/urls/:id", (req, res) => {
  * If LongURL does not exist in database gives 404 error
  */
 app.get("/u/:id", (req, res) => {
-  const longURL = urlDatabase[req.params.id];
+  const longURL = urlDatabase[req.params.id].longURL;
   if (!longURL) {
     res.status(404).send("Error 404: URL not found");
     return;
@@ -162,9 +214,14 @@ app.get("/u/:id", (req, res) => {
  * Updates longURL from edit form
  */
 app.post("/urls/:id", (req, res) => {
+  const userId = req.cookies["userId"];
+  if (!checkLogin(userId)) {
+    res.status(401).send("Error 401: Unauthorized Access. Please Login");
+    return;
+  }
   const id = req.params.id;
   const { longURL } = req.body;
-  urlDatabase[id] = longURL;
+  urlDatabase[id].longURL = longURL;
   res.redirect("/urls/");
 });
 
@@ -172,6 +229,18 @@ app.post("/urls/:id", (req, res) => {
  * Delete ShortUrl Entry from DB
  */
 app.post("/urls/:id/delete", (req, res) => {
+  const userId = req.cookies["userId"];
+  if (!checkLogin(userId)) {
+    res.status(401).send("Error 401: Unauthorized Access. Please Login");
+    return;
+  }
+  if (!urlDatabase[req.params.id]) {
+    res.status(400).send("Error 400: TinyUrl does not exist.");
+    return;
+  }
+  if (urlDatabase[req.params.id].userID !== userId) {
+    res.status(401).send("Error 401: Unauthorized Access. TinyURL does not belong to this user.");
+  }
   delete urlDatabase[req.params.id];
   res.redirect("/urls");
 });
@@ -215,7 +284,28 @@ const getUsersByEmail = function (email) {
   return null;
 };
 
-app.get("/hello", (req, res) => {
-  const templateVars = {greeting: "Hello World!"};
-  res.render('hello_world', templateVars);
-});
+/**
+ * Check login status
+ */
+
+const checkLogin = function (cookieUserId) {
+  if (users[cookieUserId]) {
+    return true;
+  }
+  return false;
+};
+
+/**
+ * Filter urls by user
+ */
+
+const urlsForUsers = function(id) {
+  const result = {};
+  const data = urlDatabase;
+  for (let key in data) {
+    if (data[key].userID === id) {
+      result[key] = data[key];
+    }
+  }
+  return result;
+};

@@ -1,5 +1,6 @@
 const express = require("express");
 const cookieParser = require('cookie-parser');
+const bcrypt = require("bcryptjs");
 const app = express();
 const PORT = 8080; // default port 8080
 
@@ -19,11 +20,11 @@ const urlDatabase = {
     userID: "test"
   }
 };
-
+const testUserPass = bcrypt.hashSync("1234", 10);
 const users = { "test": {
   id: "test",
   email: "test@testemail.com",
-  password: "1234"
+  password: testUserPass
 }};
 
 /**
@@ -70,7 +71,8 @@ app.get("/register", (req, res) => {
 
 app.post("/register", (req, res) => {
   const newUserId = generateRandomString();
-  const newUser = {id: newUserId, email: req.body.email, password: req.body.password };
+  const newPassword = bcrypt.hashSync(req.body.password, 10);
+  const newUser = {id: newUserId, email: req.body.email, password: newPassword };
   const emailSearch = getUsersByEmail(newUser.email);
   if (newUser.email === "" || newUser.password === "") {
     res.status(400).send("Error 400: No Email or Password provided");
@@ -105,11 +107,12 @@ app.get("/login", (req, res) => {
 app.post("/login", (req, res) => {
   const userLogin = { email: req.body.email, password: req.body.password };
   const emailSearch = getUsersByEmail(userLogin.email);
+  const passwordCheck = bcrypt.compareSync(userLogin.password, users[emailSearch].password);
   if (emailSearch === null) {
     res.status(400).send("Error 400: Email does not exist");
     return;
   }
-  if (userLogin.password !== users[emailSearch].password) {
+  if (!passwordCheck) {
     res.status(400).send("Error 400: invalid password");
     return;
   }
@@ -138,7 +141,6 @@ app.get("/urls", (req, res) => {
     res.status(401).send("Error 401: Unauthorized Access. Please Login");
     return;
   }
-  console.log(templateVars.urls);
   res.render('urls_index', templateVars);
 });
 

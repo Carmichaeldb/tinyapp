@@ -1,5 +1,5 @@
 const express = require("express");
-const cookieParser = require('cookie-parser');
+const cookieSession = require('cookie-session');
 const bcrypt = require("bcryptjs");
 const app = express();
 const PORT = 8080; // default port 8080
@@ -32,7 +32,10 @@ const users = { "test": {
  */
 
 app.use(express.urlencoded({ extended: true }));
-app.use(cookieParser());
+app.use(cookieSession({
+  name: 'session',
+  keys: ['test-secret-key'],
+}));
 
 /**
  * start server
@@ -43,7 +46,7 @@ app.listen(PORT, () => {
 });
 
 app.get("/", (req, res) => {
-  const userId = req.cookies["userId"];
+  const userId = req.session["userId"];
   if (checkLogin(userId)) {
     res.redirect("/urls");
     return;
@@ -56,7 +59,7 @@ app.get("/", (req, res) => {
  */
 
 app.get("/register", (req, res) => {
-  const userId = req.cookies["userId"];
+  const userId = req.session["userId"];
   const templateVars = { username: users[userId] };
   if (checkLogin(userId)) {
     res.redirect("/urls");
@@ -82,7 +85,7 @@ app.post("/register", (req, res) => {
     return;
   }
   users[newUserId] = newUser;
-  res.cookie("userId", newUserId);
+  req.session.userId = newUserId;
   res.redirect("/urls");
 });
 
@@ -91,7 +94,7 @@ app.post("/register", (req, res) => {
  */
 
 app.get("/login", (req, res) => {
-  const userId = req.cookies["userId"];
+  const userId = req.session["userId"];
   const templateVars = { username: users[userId] };
   if (checkLogin(userId)) {
     res.redirect("/urls");
@@ -116,7 +119,7 @@ app.post("/login", (req, res) => {
     res.status(400).send("Error 400: invalid password");
     return;
   }
-  res.cookie("userId", users[emailSearch].id);
+  req.session.userId = users[emailSearch].id;
   res.redirect("/urls");
 });
 
@@ -133,7 +136,7 @@ app.get("/urls.json", (req, res) => {
  */
 
 app.get("/urls", (req, res) => {
-  const userId = req.cookies["userId"];
+  const userId = req.session["userId"];
   const templateVars = {
     username: users[userId],
     urls: urlsForUsers(userId) };
@@ -149,7 +152,7 @@ app.get("/urls", (req, res) => {
  */
 
 app.get("/urls/new", (req, res) => {
-  const userId = req.cookies["userId"];
+  const userId = req.session["userId"];
   const templateVars = {username: users[userId]};
   if (!checkLogin(userId)) {
     res.status(401).send("Error 401: Unauthorized Access. Please Login");
@@ -164,7 +167,7 @@ app.get("/urls/new", (req, res) => {
  * Insert longURL with new random string as key
 */
 app.post("/urls", (req, res) => {
-  const userId = req.cookies["userId"];
+  const userId = req.session["userId"];
   if (!checkLogin(userId)) {
     res.status(401).send("Error 401: Unauthorized Access. Please Login");
     return;
@@ -181,7 +184,7 @@ app.post("/urls", (req, res) => {
  * if TinyURL does not exist in database gives 400 error
  */
 app.get("/urls/:id", (req, res) => {
-  const userId = req.cookies["userId"];
+  const userId = req.session["userId"];
   const templateVars = { id: req.params.id,
     longURL: urlDatabase[req.params.id].longURL,
     username: users[userId]};
@@ -216,7 +219,7 @@ app.get("/u/:id", (req, res) => {
  * Updates longURL from edit form
  */
 app.post("/urls/:id", (req, res) => {
-  const userId = req.cookies["userId"];
+  const userId = req.session["userId"];
   if (!checkLogin(userId)) {
     res.status(401).send("Error 401: Unauthorized Access. Please Login");
     return;
@@ -231,7 +234,7 @@ app.post("/urls/:id", (req, res) => {
  * Delete ShortUrl Entry from DB
  */
 app.post("/urls/:id/delete", (req, res) => {
-  const userId = req.cookies["userId"];
+  const userId = req.session["userId"];
   if (!checkLogin(userId)) {
     res.status(401).send("Error 401: Unauthorized Access. Please Login");
     return;
@@ -252,7 +255,7 @@ app.post("/urls/:id/delete", (req, res) => {
  * Recieves logout requests
  */
 app.post("/logout", (req, res) => {
-  res.clearCookie("userId");
+  req.session = null;
   res.redirect("/login");
 });
 

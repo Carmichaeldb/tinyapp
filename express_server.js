@@ -1,5 +1,6 @@
 const express = require("express");
 const cookieSession = require('cookie-session');
+const methodOverride = require('method-override');
 const loginRoutes = require("./routes/login");
 const urlRoutes = require("./routes/url");
 const urlApiRoutes = require("./routes/url-api");
@@ -12,6 +13,7 @@ app.set("view engine", "ejs");
  * middleware
  */
 
+app.use(methodOverride('_method'));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieSession({
   name: 'session',

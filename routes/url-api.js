@@ -69,7 +69,7 @@ router.post("/urls", (req, res) => {
 /**
  * Updates longURL from edit form
  */
-router.post("/urls/:id", (req, res) => {
+router.put("/urls/:id", (req, res) => {
   const userId = req.session["userId"];
   if (!checkLogin(userId, users)) {
     res.status(401).send("Error 401: Unauthorized Access. Please Login");
@@ -88,7 +88,7 @@ router.post("/urls/:id", (req, res) => {
 /**
  * Delete ShortUrl Entry from DB
  */
-router.post("/urls/:id/delete", (req, res) => {
+router.delete("/urls/:id/delete", (req, res) => {
   const userId = req.session["userId"];
   if (!checkLogin(userId, users)) {
     res.status(401).send("Error 401: Unauthorized Access. Please Login");

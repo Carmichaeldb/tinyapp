@@ -1,6 +1,7 @@
 const express = require("express");
 const cookieSession = require('cookie-session');
 const bcrypt = require("bcryptjs");
+const { generateRandomString, getUserByEmail, checkLogin, urlsForUsers } = require("./helpers");
 const app = express();
 const PORT = 8080; // default port 8080
 
@@ -47,7 +48,7 @@ app.listen(PORT, () => {
 
 app.get("/", (req, res) => {
   const userId = req.session["userId"];
-  if (checkLogin(userId)) {
+  if (checkLogin(userId, users)) {
     res.redirect("/urls");
     return;
   }
@@ -61,7 +62,7 @@ app.get("/", (req, res) => {
 app.get("/register", (req, res) => {
   const userId = req.session["userId"];
   const templateVars = { username: users[userId] };
-  if (checkLogin(userId)) {
+  if (checkLogin(userId, users)) {
     res.redirect("/urls");
     return;
   }
@@ -76,11 +77,11 @@ app.post("/register", (req, res) => {
   const newUserId = generateRandomString();
   const newPassword = bcrypt.hashSync(req.body.password, 10);
   const newUser = {id: newUserId, email: req.body.email, password: newPassword };
-  const emailSearch = getUsersByEmail(newUser.email);
+  const emailSearch = getUserByEmail(newUser.email, users);
   if (newUser.email === "" || newUser.password === "") {
     res.status(400).send("Error 400: No Email or Password provided");
     return;
-  } if (emailSearch !== null) {
+  } if (emailSearch !== undefined) {
     res.status(400).send("Error 400: Email already in use");
     return;
   }
@@ -96,7 +97,7 @@ app.post("/register", (req, res) => {
 app.get("/login", (req, res) => {
   const userId = req.session["userId"];
   const templateVars = { username: users[userId] };
-  if (checkLogin(userId)) {
+  if (checkLogin(userId, users)) {
     res.redirect("/urls");
     return;
   }
@@ -109,12 +110,12 @@ app.get("/login", (req, res) => {
 
 app.post("/login", (req, res) => {
   const userLogin = { email: req.body.email, password: req.body.password };
-  const emailSearch = getUsersByEmail(userLogin.email);
-  const passwordCheck = bcrypt.compareSync(userLogin.password, users[emailSearch].password);
-  if (emailSearch === null) {
+  const emailSearch = getUserByEmail(userLogin.email, users);
+  if (emailSearch === undefined) {
     res.status(400).send("Error 400: Email does not exist");
     return;
   }
+  const passwordCheck = bcrypt.compareSync(userLogin.password, users[emailSearch].password);
   if (!passwordCheck) {
     res.status(400).send("Error 400: invalid password");
     return;
@@ -139,8 +140,8 @@ app.get("/urls", (req, res) => {
   const userId = req.session["userId"];
   const templateVars = {
     username: users[userId],
-    urls: urlsForUsers(userId) };
-  if (!checkLogin(userId)) {
+    urls: urlsForUsers(userId, urlDatabase) };
+  if (!checkLogin(userId, users)) {
     res.status(401).send("Error 401: Unauthorized Access. Please Login");
     return;
   }
@@ -154,7 +155,7 @@ app.get("/urls", (req, res) => {
 app.get("/urls/new", (req, res) => {
   const userId = req.session["userId"];
   const templateVars = {username: users[userId]};
-  if (!checkLogin(userId)) {
+  if (!checkLogin(userId, users)) {
     res.status(401).send("Error 401: Unauthorized Access. Please Login");
     return;
   }
@@ -168,7 +169,7 @@ app.get("/urls/new", (req, res) => {
 */
 app.post("/urls", (req, res) => {
   const userId = req.session["userId"];
-  if (!checkLogin(userId)) {
+  if (!checkLogin(userId, users)) {
     res.status(401).send("Error 401: Unauthorized Access. Please Login");
     return;
   }
@@ -192,7 +193,7 @@ app.get("/urls/:id", (req, res) => {
     res.status(400).send("Error 400: TinyUrl does not exist.");
     return;
   }
-  if (!checkLogin(userId)) {
+  if (!checkLogin(userId, users)) {
     res.status(401).send("Error 401: Unauthorized Access. Please Login.");
     return;
   }
@@ -220,8 +221,12 @@ app.get("/u/:id", (req, res) => {
  */
 app.post("/urls/:id", (req, res) => {
   const userId = req.session["userId"];
-  if (!checkLogin(userId)) {
+  if (!checkLogin(userId, users)) {
     res.status(401).send("Error 401: Unauthorized Access. Please Login");
+    return;
+  }
+  if (urlDatabase[req.params.id].userID !== userId) {
+    res.status(401).send("Error 401: Unauthorized Access. TinyURL does not belong to this user.");
     return;
   }
   const id = req.params.id;
@@ -235,7 +240,7 @@ app.post("/urls/:id", (req, res) => {
  */
 app.post("/urls/:id/delete", (req, res) => {
   const userId = req.session["userId"];
-  if (!checkLogin(userId)) {
+  if (!checkLogin(userId, users)) {
     res.status(401).send("Error 401: Unauthorized Access. Please Login");
     return;
   }
@@ -258,59 +263,3 @@ app.post("/logout", (req, res) => {
   req.session = null;
   res.redirect("/login");
 });
-
-//////////////////////////////////////
-//HELPER FUNCTIONS
-/////////////////////////////////////
-/**
- * Generates random 6 character string
- */
-
-const generateRandomString = function () {
-  const characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
-  let result = '';
-  for (let i = 0; i < 6; i++) {
-    const random = Math.floor(Math.random() * characters.length);
-    result += characters[random];
-  }
-  return result;
-};
-
-/**
- * Search for user by email
- */
-
-const getUsersByEmail = function (email) {
-  for (let user in users) {
-    if (users[user].email === email) {
-      return user;
-    }
-  }
-  return null;
-};
-
-/**
- * Check login status
- */
-
-const checkLogin = function (cookieUserId) {
-  if (users[cookieUserId]) {
-    return true;
-  }
-  return false;
-};
-
-/**
- * Filter urls by user
- */
-
-const urlsForUsers = function(id) {
-  const result = {};
-  const data = urlDatabase;
-  for (let key in data) {
-    if (data[key].userID === id) {
-      result[key] = data[key];
-    }
-  }
-  return result;
-};

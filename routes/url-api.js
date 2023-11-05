@@ -14,10 +14,13 @@ const urlDatabase = require("../data/urlDB");
  */
 router.get("/urls/:id", (req, res) => {
   const userId = req.session["userId"];
-  const templateVars = { id: req.params.id,
-    longURL: urlDatabase[req.params.id].longURL,
-    username: users[userId]};
-  if (!urlDatabase[req.params.id]) {
+  const tinyUrl = req.params.id;
+  const templateVars = { id: tinyUrl,
+    longURL: urlDatabase[tinyUrl].longURL,
+    username: users[userId],
+    visits: urlDatabase[tinyUrl].visits,
+    uniqueVisits: urlDatabase[tinyUrl].uniqueVisits };
+  if (!urlDatabase[tinyUrl]) {
     res.status(400).send("Error 400: TinyUrl does not exist.");
     return;
   }
@@ -25,7 +28,7 @@ router.get("/urls/:id", (req, res) => {
     res.status(401).send("Error 401: Unauthorized Access. Please Login.");
     return;
   }
-  if (urlDatabase[req.params.id].userID !== userId) {
+  if (urlDatabase[tinyUrl].userID !== userId) {
     res.status(401).send("Error 401: Unauthorized Access. TinyURL does not belong to this user.");
   }
   res.render("urls_show", templateVars);
@@ -36,11 +39,21 @@ router.get("/urls/:id", (req, res) => {
  * If LongURL does not exist in database gives 404 error
  */
 router.get("/u/:id", (req, res) => {
-  const longURL = urlDatabase[req.params.id].longURL;
+  const tinyUrl = req.params.id
+  const longURL = urlDatabase[tinyUrl].longURL;
+  const visitCookie = req.cookies["visitId"];
+  const visitDate = new Date();
+  const timestamp = visitDate.getTime();
   if (!longURL) {
     res.status(404).send("Error 404: URL not found");
     return;
   }
+  if (!visitCookie) {
+    const newVisitor = generateRandomString();
+    res.cookie("visitId", newVisitor);
+    urlDatabase[tinyUrl].uniqueVisits[newVisitor] = { visitId: newVisitor, time: timestamp };
+  }
+  urlDatabase[tinyUrl].visits += 1;
   res.redirect(longURL);
 });
 
@@ -61,7 +74,7 @@ router.post("/urls", (req, res) => {
   }
   const tinyUrl = generateRandomString();
   const { longURL } =  req.body;
-  urlDatabase[tinyUrl] = { longURL: longURL, userID: userId };
+  urlDatabase[tinyUrl] = { longURL: longURL, userID: userId, visits: 0, uniqueVisits: {} };
   
   res.redirect("/urls/" + tinyUrl);
 });
@@ -90,18 +103,19 @@ router.put("/urls/:id", (req, res) => {
  */
 router.delete("/urls/:id/delete", (req, res) => {
   const userId = req.session["userId"];
+  const tinyUrl = req.params.id;
   if (!checkLogin(userId, users)) {
     res.status(401).send("Error 401: Unauthorized Access. Please Login");
     return;
   }
-  if (!urlDatabase[req.params.id]) {
+  if (!urlDatabase[tinyUrl]) {
     res.status(400).send("Error 400: TinyUrl does not exist.");
     return;
   }
-  if (urlDatabase[req.params.id].userID !== userId) {
+  if (urlDatabase[tinyUrl].userID !== userId) {
     res.status(401).send("Error 401: Unauthorized Access. TinyURL does not belong to this user.");
   }
-  delete urlDatabase[req.params.id];
+  delete urlDatabase[tinyUrl];
   res.redirect("/urls");
 });
 

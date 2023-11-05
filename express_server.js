@@ -1,5 +1,6 @@
 const express = require("express");
 const cookieSession = require('cookie-session');
+const cookieParser = require('cookie-parser');
 const methodOverride = require('method-override');
 const loginRoutes = require("./routes/login");
 const urlRoutes = require("./routes/url");
@@ -15,6 +16,7 @@ app.set("view engine", "ejs");
 
 app.use(methodOverride('_method'));
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 app.use(cookieSession({
   name: 'session',
   keys: ['test-secret-key'],

@@ -20,6 +20,18 @@
         <p class="card-text">
           Short URL ID: <a href="/u/<%= id %>"><%= id %></a>
         </p>
+        <p class="card-text">
+          Visits: <%= visits %>
+        </p>
+        <p class="card-text"> Unique Visits: 
+        <% if (Object.keys(uniqueVisits).length === 0) {%>
+           0 </p>
+          <% } else { %>
+            <% for (let key in uniqueVisits) { %>
+            </p>
+            <p>timestamp: <%= uniqueVisits[key].time %> visitor: <%= key %>  </p>
+            <% } %>
+          <% } %>
       </div>
       <div class="card-footer text-muted">      
         <h3>Edit TinyURL</h3>

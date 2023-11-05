@@ -45,14 +45,13 @@ router.get("/u/:id", (req, res) => {
   const tinyUrl = req.params.id;
   const longURL = urlDatabase[tinyUrl].longURL;
   const visitCookie = req.cookies["visitId"];
-  const visitDate = new Date();
-  const timestamp = visitDate.getTime();
   if (!longURL) {
     res.status(404).send("Error 404: URL not found");
     return;
   }
   if (!visitCookie) {
     const newVisitor = generateRandomString();
+    const timestamp = moment().format("X");
     res.cookie("visitId", newVisitor);
     urlDatabase[tinyUrl].uniqueVisits[newVisitor] = { visitId: newVisitor, time: timestamp };
   }

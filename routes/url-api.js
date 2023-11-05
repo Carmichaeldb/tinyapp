@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const moment = require('moment');
 const { generateRandomString, checkLogin } = require("../helpers");
 const users = require("../data/users");
 const urlDatabase = require("../data/urlDB");
@@ -18,6 +19,8 @@ router.get("/urls/:id", (req, res) => {
   const templateVars = { id: tinyUrl,
     longURL: urlDatabase[tinyUrl].longURL,
     username: users[userId],
+    creationDate: urlDatabase[tinyUrl].creationDate,
+    editDate: urlDatabase[tinyUrl].editDate,
     visits: urlDatabase[tinyUrl].visits,
     uniqueVisits: urlDatabase[tinyUrl].uniqueVisits };
   if (!urlDatabase[tinyUrl]) {
@@ -39,7 +42,7 @@ router.get("/urls/:id", (req, res) => {
  * If LongURL does not exist in database gives 404 error
  */
 router.get("/u/:id", (req, res) => {
-  const tinyUrl = req.params.id
+  const tinyUrl = req.params.id;
   const longURL = urlDatabase[tinyUrl].longURL;
   const visitCookie = req.cookies["visitId"];
   const visitDate = new Date();
@@ -68,14 +71,14 @@ router.get("/u/:id", (req, res) => {
 */
 router.post("/urls", (req, res) => {
   const userId = req.session["userId"];
+  const currentDate = moment().format('dddd, MMMM Do YYYY');
+  const tinyUrl = generateRandomString();
+  const { longURL } =  req.body;
   if (!checkLogin(userId, users)) {
     res.status(401).send("Error 401: Unauthorized Access. Please Login");
     return;
   }
-  const tinyUrl = generateRandomString();
-  const { longURL } =  req.body;
-  urlDatabase[tinyUrl] = { longURL: longURL, userID: userId, visits: 0, uniqueVisits: {} };
-  
+  urlDatabase[tinyUrl] = { longURL: longURL, userID: userId, creationDate: currentDate, visits: 0, uniqueVisits: {} };
   res.redirect("/urls/" + tinyUrl);
 });
 
@@ -84,6 +87,9 @@ router.post("/urls", (req, res) => {
  */
 router.put("/urls/:id", (req, res) => {
   const userId = req.session["userId"];
+  const id = req.params.id;
+  const { longURL } = req.body;
+  const currentDate = moment().format('dddd, MMMM Do YYYY');
   if (!checkLogin(userId, users)) {
     res.status(401).send("Error 401: Unauthorized Access. Please Login");
     return;
@@ -92,9 +98,9 @@ router.put("/urls/:id", (req, res) => {
     res.status(401).send("Error 401: Unauthorized Access. TinyURL does not belong to this user.");
     return;
   }
-  const id = req.params.id;
-  const { longURL } = req.body;
+
   urlDatabase[id].longURL = longURL;
+  urlDatabase[id].editDate = currentDate;
   res.redirect("/urls/");
 });
 

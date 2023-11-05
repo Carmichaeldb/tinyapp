@@ -21,6 +21,13 @@
           Short URL ID: <a href="/u/<%= id %>"><%= id %></a>
         </p>
         <p class="card-text">
+          Created on: <%= creationDate %>
+        </p>
+          <% if (editDate) {%>
+            <p class="card-text"> Last Edit: 
+             <%= editDate %> </p>
+            <% } %>
+        <p class="card-text">
           Visits: <%= visits %>
         </p>
         <p class="card-text"> Unique Visits: 

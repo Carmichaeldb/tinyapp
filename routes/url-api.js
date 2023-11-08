@@ -29,7 +29,7 @@ router.get("/urls/:id", (req, res) => {
     res.status(401).send("Error 401: Unauthorized Access. TinyURL does not belong to this user.");
     return;
   }
-  
+
   const templateVars = { id: tinyUrl,
     longURL: urlDatabase[tinyUrl].longURL,
     username: users[userId],
@@ -47,12 +47,12 @@ router.get("/urls/:id", (req, res) => {
  */
 router.get("/u/:id", (req, res) => {
   const tinyUrl = req.params.id;
-  const longURL = urlDatabase[tinyUrl].longURL;
-  const visitCookie = req.cookies["visitId"];
-  if (!longURL) {
+  if (!urlDatabase[tinyUrl]) {
     res.status(404).send("Error 404: URL not found");
     return;
   }
+  const longURL = urlDatabase[tinyUrl].longURL;
+  const visitCookie = req.cookies["visitId"];
   if (!visitCookie) {
     const newVisitor = generateRandomString();
     const timestamp = moment().format("X");

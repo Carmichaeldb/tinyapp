@@ -16,13 +16,7 @@ const urlDatabase = require("../data/urlDB");
 router.get("/urls/:id", (req, res) => {
   const userId = req.session["userId"];
   const tinyUrl = req.params.id;
-  const templateVars = { id: tinyUrl,
-    longURL: urlDatabase[tinyUrl].longURL,
-    username: users[userId],
-    creationDate: urlDatabase[tinyUrl].creationDate,
-    editDate: urlDatabase[tinyUrl].editDate,
-    visits: urlDatabase[tinyUrl].visits,
-    uniqueVisits: urlDatabase[tinyUrl].uniqueVisits };
+
   if (!urlDatabase[tinyUrl]) {
     res.status(400).send("Error 400: TinyUrl does not exist.");
     return;
@@ -33,7 +27,17 @@ router.get("/urls/:id", (req, res) => {
   }
   if (urlDatabase[tinyUrl].userID !== userId) {
     res.status(401).send("Error 401: Unauthorized Access. TinyURL does not belong to this user.");
+    return;
   }
+  
+  const templateVars = { id: tinyUrl,
+    longURL: urlDatabase[tinyUrl].longURL,
+    username: users[userId],
+    creationDate: urlDatabase[tinyUrl].creationDate,
+    editDate: urlDatabase[tinyUrl].editDate,
+    visits: urlDatabase[tinyUrl].visits,
+    uniqueVisits: urlDatabase[tinyUrl].uniqueVisits };
+
   res.render("urls_show", templateVars);
 });
 
